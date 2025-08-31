@@ -355,20 +355,25 @@ public final class Conversation: ObservableObject, RoomDelegate {
     }
 
     private func observeDeviceChanges() {
-        do {
-            try AudioManager.shared.set(microphoneMuteMode: .inputMixer)
-            try AudioManager.shared.setRecordingAlwaysPreparedMode(true)
-        } catch {
-            // ignore: we have no error handler public API yet
-        }
-
-        AudioManager.shared.onDeviceUpdate = { [weak self] _ in
-            Task { @MainActor in
-                self?.audioDevices = AudioManager.shared.inputDevices
-                self?.selectedAudioDeviceID = AudioManager.shared.defaultInputDevice.deviceId
-            }
-        }
+  do {
+    try AudioManager.shared.set(microphoneMuteMode: .inputMixer)
+  } catch {
+    // ignore
+  }
+  Task {
+    do {
+      try await AudioManager.shared.setRecordingAlwaysPreparedMode(true)
+    } catch {
+      // ignore
     }
+  }
+  AudioManager.shared.onDeviceUpdate = { [weak self] _ in
+    Task { @MainActor in
+      self?.audioDevices = AudioManager.shared.inputDevices
+      self?.selectedAudioDeviceID = AudioManager.shared.defaultInputDevice.deviceId
+    }
+  }
+}
 
     private func startRoomObservers() {
         guard let deps, let room = deps.connectionManager.room else { return }
